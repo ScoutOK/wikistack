@@ -4,12 +4,14 @@ var express = require('express');
 var app = express();
 var morgan = require('morgan');
 var nunjucks = require('nunjucks');
-var makesRouter = require('./routes');
+var router = require('./routes');
 var fs = require('fs');
 var path = require('path');
 var mime = require('mime');
 var bodyParser = require('body-parser');
 var socketio = require('socket.io');
+var model = require('./models');
+var wikiRouter = require('./routes/wiki');
 
 // templating boilerplate setup
 app.engine('html', nunjucks.render); // how to render html templates
@@ -29,7 +31,16 @@ var server = app.listen(1337, function(){
 });
 var io = socketio.listen(server);
 
-//statis middleware
+model.Page.sync({}).then(function() {
+  return model.User.sync({});
+}).then(function(){console.log('connected to databases')}).catch(console.error)
+
+
+
+//static middleware
 app.use(express.static(path.join(__dirname, '/public')));
 
-app.use('/', makesRouter(io));
+app.use('/wiki', wikiRouter);
+
+app.use('/', router);
+
